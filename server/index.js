@@ -23,9 +23,9 @@ app.post('/api/chat', async (req, res) => {
 
   // Hardcoded reply for Arghya
   const arghyaKeywords = [
-      "who is virat",
-      "what is virat",
-      "do you know virat",
+      "who is arghya",
+      "what is arghya",
+      "do you know arghya",
       "did you know arghya",
       "arghya"
   ];
