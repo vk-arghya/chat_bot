@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Arghya's Premium AI Chatbot</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #1f1c2c, #928DAB);
+            font-family: 'Inter', sans-serif;
+            color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+            backdrop-filter: blur(8px);
+        }
+
+        .overlay.active { opacity: 1; visibility: visible; }
+
+        .chat-popup {
+            width: 90%; max-width: 600px;
+            height: 90vh; max-height: 700px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+            display: flex; flex-direction: column;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.15);
+            animation: fadeIn 0.6s ease;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+
+        .overlay.active .chat-popup { transform: scale(1); }
+
+        .chat-header {
+            display: flex; justify-content: space-between; align-items: center;
+            color: #fff; font-weight: 700; font-size: 22px;
+            margin-bottom: 18px; padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            letter-spacing: 0.5px;
+        }
+
+        .chat-area {
+            flex: 1; overflow-y: auto;
+            display: flex; flex-direction: column;
+            gap: 15px; font-size: 15px; padding-right: 5px;
+        }
+
+        .chat-area::-webkit-scrollbar { width: 8px; }
+        .chat-area::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+        }
+
+        .chat-input-container {
+            display: flex; gap: 10px; margin-top: 15px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 14px 18px;
+            border-radius: 10px; border: none;
+            font-size: 15px; outline: none;
+            background: rgba(255,255,255,0.1);
+            color: #f5f5f5;
+            transition: background 0.3s ease;
+        }
+
+        .chat-input:focus {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .chat-input::placeholder { color: rgba(255,255,255,0.6); }
+
+        .send-btn {
+            background: linear-gradient(135deg, #6EE7B7, #3B82F6);
+            border: none; color: white; font-size: 15px;
+            padding: 14px 20px; border-radius: 10px;
+            cursor: pointer; font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+
+        .chat-bubble {
+            padding: 14px 20px; border-radius: 18px;
+            max-width: 90%; white-space: pre-wrap; word-break: break-word;
+            line-height: 1.7; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-weight: 400;
+        }
+
+        .user-msg {
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            align-self: flex-end;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .bot-msg {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.05);
+            align-self: flex-start;
+        }
+
+        .markdown-content pre {
+            background: #2d2d2d !important;
+            padding: 12px; border-radius: 8px; overflow-x: auto;
+        }
+
+        .markdown-content code {
+            font-family: 'Fira Code', monospace;
+            color: #93c5fd;
+        }
+
+        .typing-animation {
+            display: inline-block;
+            border-right: 3px solid #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            animation: typing 1.5s steps(20) infinite alternate, blink 0.7s infinite;
+            background: linear-gradient(90deg, #6EE7B7, #3B82F6, #9333EA);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 600;
+        }
+
+        @keyframes typing { from { width: 0; } to { width: 100%; } }
+        @keyframes blink { 50% { border-color: transparent; } }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        button {
+            background: none; border: none; color: rgba(255,255,255,0.8);
+            font-size: 20px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chatOverlay" class="overlay">
+    <div class="chat-popup">
+        <div class="chat-header">
+            <span>Arghya's AI Chatbot</span>
+            <button id="closeChat">✖️</button>
+        </div>
+        <div id="chatArea" class="chat-area"></div>
+
+        <div class="chat-input-container">
+            <input id="userInput" type="text" placeholder="Type your message..." class="chat-input" />
+            <button id="sendBtn" class="send-btn">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const closeChat = document.getElementById('closeChat');
+    const chatOverlay = document.getElementById('chatOverlay');
+    const chatArea = document.getElementById('chatArea');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    closeChat.addEventListener('click', () => {
+        chatOverlay.classList.remove('active');
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        chatOverlay.classList.add('active');
+        sendWelcomeMessage();
+        userInput.focus();
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    function sendWelcomeMessage() {
+        const welcomeText = `
+# 👋 Welcome to Arghya's AI Chat!
+Feel free to ask me anything! 🚀
+`;
+        addMessage(welcomeText, "bot");
+    }
+
+    async function sendMessage() {
+        if (userInput.value.trim() === "") return;
+
+        const userMessage = userInput.value;
+        addMessage(userMessage, "user");
+        userInput.value = "";
+
+        const botThinking = document.createElement('div');
+        botThinking.className = 'chat-bubble bot-msg';
+        botThinking.innerHTML = `<span class="typing-animation">Bot is typing...</span>`;
+        chatArea.appendChild(botThinking);
+        chatArea.scrollTop = chatArea.scrollHeight;
+
+        const botReply = await getAIResponse(userMessage);
+
+        chatArea.removeChild(botThinking);
+        addMessage(botReply, "bot");
+    }
+
+    function addMessage(message, sender) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-bubble ${sender === "user" ? "user-msg" : "bot-msg"}`;
+
+        if (sender === "bot") {
+            msgDiv.innerHTML = `<div class="markdown-content">${marked.parse(message)}</div>`;
+            setTimeout(() => { Prism.highlightAll(); chatArea.scrollTop = chatArea.scrollHeight; }, 50);
+        } else {
+            msgDiv.textContent = message;
+        }
+
+        chatArea.appendChild(msgDiv);
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    async function getAIResponse(userMessage) {
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userMessage })
+            });
+
+            const data = await response.json();
+            if (response.status !== 200) return `⚠️ Error: ${data.reply}`;
+            return data.reply;
+        } catch (err) {
+            console.error(err);
+            return "⚠️ Connection error.";
+        }
+    }
+</script>
+
+</body>
+</html>
