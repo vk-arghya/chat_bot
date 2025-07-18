@@ -27,7 +27,7 @@ app.post('/api/chat', async (req, res) => {
       "what is virat",
       "do you know virat",
       "did you know arghya",
-      "virat"
+      "arghya"
   ];
 
   const isArghyaQuestion = arghyaKeywords.some(kw => userMsg.includes(kw));
